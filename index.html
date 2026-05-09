@@ -907,8 +907,6 @@ function loadAdminData() {
 function renderAdminTable() {
   fetchAppointments().then(function(all) {
     adminAll = all;
-    document.getElementById('adminTotal').textContent = all.length;
-    document.getElementById('adminPending').textContent = all.filter(function(r) { return r.status === '待处理'; }).length;
     document.getElementById('adminStats').textContent = '共 ' + all.length + ' 条 | 待处理 ' + all.filter(function(r) { return r.status === '待处理'; }).length + ' 条';
 
     var body = document.getElementById('adminBody');
