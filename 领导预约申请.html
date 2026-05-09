@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>领导预约申请</title>
+<!-- WeChat X5 内核适配：确保在微信内置浏览器中直接打开，不跳转外部浏览器 -->
+<meta name="x5-orientation" content="portrait">
+<meta name="x5-fullscreen" content="false">
+<meta name="x5-page-mode" content="app">
+<!-- 禁止微信内置浏览器自动识别号码/邮箱 -->
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  background: #f5f6fa; color: #1a1a2e; min-height: 100vh; line-height: 1.5; overflow-x: hidden;
+}
+:root {
+  --primary: #2F5496; --primary-dark: #1e3c6f; --primary-light: #e8edf7;
+  --success: #43A047; --danger: #e53935; --warning: #F4B942;
+  --gray: #f7f8fc; --border: #e0e4ec; --text: #1a1a2e; --text2: #6b7280;
+  --radius: 12px; --radius-sm: 8px; --shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  background: var(--primary); color: #fff; padding: 0 16px;
+  display: flex; align-items: center; height: 52px;
+  position: sticky; top: 0; z-index: 100;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.top-bar .brand { font-size: 16px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
+.top-bar .switch-btn {
+  background: rgba(255,255,255,0.15); border: none; color: #fff;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  transition: background 0.2s; white-space: nowrap;
+}
+.top-bar .switch-btn:active { background: rgba(255,255,255,0.3); }
+
+/* ===== PAGES ===== */
+.page-guest, .page-admin, .page-setup { display: none; animation: fadeIn 0.3s ease; }
+body.mode-guest .page-guest { display: block; }
+body.mode-admin .page-admin { display: block; }
+body.mode-setup .page-setup { display: block; }
+body.mode-setup .top-bar { display: none; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== SETUP SCREEN ===== */
+.setup-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+  background: linear-gradient(135deg, #f5f6fa 0%, #e8edf7 100%);
+}
+.setup-card {
+  background: #fff; border-radius: 20px; padding: 36px 28px; max-width: 480px; width: 100%;
+  box-shadow: 0 4px 24px rgba(47,84,150,0.1); text-align: center;
+}
+.setup-card .logo { font-size: 48px; margin-bottom: 12px; }
+.setup-card h1 { font-size: 22px; color: var(--text); margin-bottom: 4px; }
+.setup-card .sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+.setup-field { text-align: left; margin-bottom: 14px; }
+.setup-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; font-weight: 600; }
+.setup-field input {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 14px; transition: border 0.2s; background: var(--gray);
+}
+.setup-field input:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(47,84,150,0.1); }
+.setup-field .hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+.setup-divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: #ccc; font-size: 12px; }
+.setup-divider::before, .setup-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ===== GUEST PAGE ===== */
+.hero { text-align: center; padding: 32px 20px 16px; }
+.hero .avatar {
+  width: 64px; height: 64px; border-radius: 50%; background: var(--primary-light);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 28px;
+}
+.hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.hero p { font-size: 13px; color: var(--text2); }
+.hero .notice { font-size: 12px; color: var(--danger); margin-top: 8px; }
+.form-card { max-width: 600px; margin: 0 auto 24px; padding: 0 16px; }
+.form-section {
+  background: #fff; border-radius: var(--radius); padding: 24px 20px;
+  box-shadow: var(--shadow); margin-bottom: 16px;
+}
+.form-section h2 { font-size: 15px; font-weight: 600; color: var(--primary); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { margin-bottom: 14px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+.form-group label .req { color: var(--danger); margin-left: 2px; }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+  background: var(--gray); transition: all 0.2s; -webkit-appearance: none;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(47,84,150,0.1);
+}
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-group .hint { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+/* Date/Time Picker */
+.date-panel { background: var(--gray); border-radius: 10px; padding: 14px; }
+.date-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.date-pill {
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 20px;
+  cursor: pointer; font-size: 12px; transition: all 0.15s;
+  user-select: none; background: #fff; white-space: nowrap;
+}
+.date-pill:active { transform: scale(0.96); }
+.date-pill:hover { border-color: var(--primary); }
+.date-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.date-pill.blocked { background: #f5f5f5; color: #bbb; border-color: #eee; cursor: not-allowed; }
+.date-pill.blocked:active { transform: none; }
+.time-slot-row { display: none; margin-top: 10px; padding: 10px 12px; background: #fff; border-radius: 8px; border: 1px solid var(--border); }
+.time-slot-row.show { display: block; }
+.time-slot-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.time-slot-header .date-label { font-size: 13px; font-weight: 600; color: var(--primary); }
+.time-slot-header .clear-btn { font-size: 12px; color: var(--text2); cursor: pointer; background: none; border: none; padding: 2px 6px; }
+.time-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.time-pill {
+  padding: 6px 14px; border: 1px solid var(--border); border-radius: 16px;
+  cursor: pointer; font-size: 12px; transition: all 0.15s; user-select: none; background: #fff;
+}
+.time-pill:active { transform: scale(0.96); }
+.time-pill:hover { border-color: var(--primary); }
+.time-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.time-pill.blocked { background: #f9f9f9; color: #ccc; border-color: #eee; cursor: not-allowed; text-decoration: line-through; }
+.time-pill.blocked:active { transform: none; }
+.selected-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.selected-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--primary-light); color: var(--primary);
+  padding: 5px 10px 5px 14px; border-radius: 16px; font-size: 12px; font-weight: 500;
+}
+.selected-tag .remove {
+  cursor: pointer; width: 18px; height: 18px; border-radius: 50%;
+  background: #c5d5f0; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--primary);
+}
+.selected-tag .remove:active { background: #b0c4e8; }
+.blocked-notice { font-size: 12px; color: var(--danger); background: #FFF3E0; padding: 8px 12px; border-radius: 6px; margin-top: 6px; display: none; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 24px; border: none; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-warning { background: var(--warning); color: #fff; }
+.btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text2); }
+.btn-full { width: 100%; padding: 13px; font-size: 15px; border-radius: 10px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-xs { padding: 4px 10px; font-size: 11px; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  z-index: 200; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 20px; padding: 40px 32px 28px;
+  text-align: center; max-width: 380px; width: 100%; animation: fadeIn 0.3s ease;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-box .icon { font-size: 56px; margin-bottom: 16px; }
+.modal-box h3 { font-size: 20px; margin-bottom: 8px; }
+.modal-box p { color: var(--text2); font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
+
+/* Admin */
+.admin-content { max-width: 960px; margin: 0 auto; padding: 16px; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.admin-header h2 { font-size: 18px; }
+.admin-header .stats { font-size: 13px; color: var(--text2); }
+.admin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.blocked-card { background: #fff; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.blocked-card h3 { font-size: 15px; color: var(--primary); margin-bottom: 8px; }
+.blocked-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
+.blocked-form .bf-group { display: flex; flex-direction: column; }
+.blocked-form label { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+.blocked-form select, .blocked-form input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--gray); }
+.blocked-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.blocked-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #FFF3E0; color: #BF360C; padding: 4px 10px 4px 14px;
+  border-radius: 16px; font-size: 12px; border: 1px solid #FFE0B2;
+}
+.blocked-tag .remove { cursor: pointer; width: 16px; height: 16px; border-radius: 50%; background: #FFE0B2; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #BF360C; }
+.blocked-tag .remove:active { background: #FFCC80; }
+.table-wrap { background: #fff; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 16px; }
+.table-scroll { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.admin-table th { background: var(--gray); padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text2); border-bottom: 2px solid var(--border); white-space: nowrap; }
+.admin-table td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table .status-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.status-pending { background: #FFF3E0; color: #E65100; }
+.status-confirmed { background: #E8F5E9; color: #2E7D32; }
+.status-declined { background: #FBE9E7; color: #BF360C; }
+.admin-table .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+.admin-empty { padding: 48px 20px; text-align: center; color: var(--text2); }
+.admin-empty .big-icon { font-size: 48px; margin-bottom: 8px; }
+.settings-card { background: #fff; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.settings-card h3 { font-size: 15px; color: var(--primary); margin-bottom: 12px; }
+.settings-group { margin-bottom: 12px; }
+.settings-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+.settings-group input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--gray); }
+.settings-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+.qr-wrap { display: flex; justify-content: center; margin: 16px 0; }
+#qrcode { padding: 12px; background: #fff; border-radius: 8px; display: inline-block; }
+#qrcode img, #qrcode canvas { display: block; }
+.qr-url { background: var(--gray); border-radius: 6px; padding: 8px 12px; font-size: 11px; color: var(--text2); word-break: break-all; margin-bottom: 12px; user-select: all; }
+.version-tag { font-size: 11px; color: #ccc; text-align: center; padding: 16px 20px 32px; }
+.toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.78); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 300; animation: toastIn 0.25s ease; pointer-events: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+@media (max-width: 480px) {
+  .form-section { padding: 20px 16px; border-radius: 10px; }
+  .form-row { grid-template-columns: 1fr; }
+  .hero { padding: 24px 16px 12px; }
+  .hero h1 { font-size: 20px; }
+  .admin-table th, .admin-table td { padding: 8px 10px; font-size: 12px; }
+  .blocked-form { flex-direction: column; align-items: stretch; }
+  .blocked-form .bf-group { width: 100%; }
+  .modal-box { padding: 32px 24px 24px; }
+  .setup-card { padding: 28px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 顶栏 ===== -->
+<div class="top-bar">
+  <div class="brand" id="brandText">📅 领导预约申请</div>
+  <button class="switch-btn" id="switchBtn" onclick="toggleMode()">管理后台</button>
+</div>
+
+<!-- ==================== 访客页面 ==================== -->
+<div class="page-guest" id="pageGuest">
+  <div class="hero">
+    <div class="avatar">👤</div>
+    <h1 id="leaderNameDisplay">预约领导时间</h1>
+    <p>填写以下信息，提交预约申请，等待管理员确认</p>
+    <div class="notice" id="guestNotice"></div>
+  </div>
+  <div class="form-card">
+    <div class="form-section">
+      <h2>基本信息</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>公司名称 <span class="req">*</span></label>
+          <input type="text" id="gCompany" placeholder="请填写公司全称" autocomplete="organization">
+        </div>
+        <div class="form-group">
+          <label>联系人姓名 <span class="req">*</span></label>
+          <input type="text" id="gName" placeholder="姓名" autocomplete="name">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>职位</label>
+          <input type="text" id="gTitle" placeholder="如：投资总监">
+        </div>
+        <div class="form-group">
+          <label>联系电话 <span class="req">*</span></label>
+          <input type="tel" id="gPhone" placeholder="手机号" autocomplete="tel">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="gEmail" placeholder="Email" autocomplete="email">
+      </div>
+    </div>
+    <div class="form-section">
+      <h2>拜访信息</h2>
+      <div class="form-group">
+        <label>拜访事由 <span class="req">*</span></label>
+        <textarea id="gPurpose" placeholder="请简要说明来访目的，如：汇报XX项目进展、洽谈XX合作等"></textarea>
+      </div>
+      <div class="form-group">
+        <label>首选日期和时间 <span class="req">*</span></label>
+        <div class="date-panel">
+          <div class="date-pills" id="datePills"></div>
+          <div class="blocked-notice" id="blockedNotice"></div>
+          <div class="time-slot-row" id="timeSlotRow">
+            <div class="time-slot-header">
+              <span class="date-label" id="timeSlotDateLabel"></span>
+              <button class="clear-btn" onclick="clearSelectedSlots()">清除已选</button>
+            </div>
+            <div class="time-pills" id="timeSlotPills"></div>
+          </div>
+          <div class="selected-tags" id="selectedTags"></div>
+        </div>
+        <div class="hint">灰色时段为已有安排，不可选；可多选多个时间段</div>
+      </div>
+      <div class="form-group">
+        <label>备注</label>
+        <textarea id="gNote" placeholder="其他需要说明的情况"></textarea>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="submitAppointment()" id="submitBtn">提交预约申请</button>
+    <p style="text-align:center;font-size:12px;color:#999;margin-top:10px">提交后等待管理员确认，最终时间以确认为准</p>
+  </div>
+  <div class="version-tag" id="versionTag">☁️ Supabase 云同步 · 微信扫码即用</div>
+</div>
+
+<!-- ==================== 管理后台 ==================== -->
+<div class="page-admin" id="pageAdmin">
+  <div class="admin-content">
+    <div class="settings-card">
+      <h3>⚙️ 基础设置</h3>
+      <div class="settings-group">
+        <label>领导称呼</label>
+        <input type="text" id="sLeaderName" placeholder="如：吴总" value="领导">
+      </div>
+      <div class="settings-group">
+        <label>管理密码</label>
+        <input type="password" id="sAdminPwd" placeholder="设置管理后台密码" value="admin123">
+        <div class="settings-hint">修改后请点击「保存设置」</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-primary btn-sm" onclick="saveSettings()">💾 保存设置</button>
+        <button class="btn btn-outline btn-sm" onclick="showSetupGuide()">🌐 部署/配置</button>
+      </div>
+    </div>
+    <div class="blocked-card">
+      <h3>⛔ 已占用 / 不可预约时段</h3>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px">填入出差、会议等已占用时间，访客端自动灰掉并显示原因</p>
+      <div class="blocked-form">
+        <div class="bf-group">
+          <label>日期</label>
+          <input type="date" id="blockedDate">
+        </div>
+        <div class="bf-group">
+          <label>时段</label>
+          <select id="blockedSlot">
+            <option value="全天">全天</option>
+            <option value="上午">上午</option>
+            <option value="下午">下午</option>
+            <option value="09:00-10:00">09:00-10:00</option>
+            <option value="10:00-11:00">10:00-11:00</option>
+            <option value="11:00-12:00">11:00-12:00</option>
+            <option value="14:00-15:00">14:00-15:00</option>
+            <option value="15:00-16:00">15:00-16:00</option>
+            <option value="16:00-17:00">16:00-17:00</option>
+          </select>
+        </div>
+        <div class="bf-group" style="flex:1;min-width:120px">
+          <label>原因（显示给访客）</label>
+          <input type="text" id="blockedReason" placeholder="如：出差珠海">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addBlockedSlot()" id="addBlockedBtn" style="align-self:end">添加</button>
+      </div>
+      <div class="blocked-tags" id="blockedList"></div>
+    </div>
+    <div class="admin-header">
+      <div>
+        <h2>📋 预约记录</h2>
+        <div class="stats" id="adminStats">加载中...</div>
+      </div>
+      <div class="admin-actions">
+        <button class="btn btn-outline btn-sm" onclick="exportData()">📋 导出</button>
+        <button class="btn btn-primary btn-sm" onclick="showQR()">📱 二维码</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>提交时间</th>
+              <th>公司</th>
+              <th>联系人</th>
+              <th>电话</th>
+              <th>事由</th>
+              <th>首选时间</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="adminBody"></tbody>
+        </table>
+      </div>
+      <div class="admin-empty" id="adminEmpty">
+        <div class="big-icon">📭</div>
+        <p>暂无预约请求</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 设置/部署引导页 ==================== -->
+<div class="page-setup" id="pageSetup">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:linear-gradient(135deg,#f5f6fa 0%,#e8edf7 100%)">
+    <div class="setup-card">
+      <div class="logo">🌐</div>
+      <h1>首次配置</h1>
+      <p class="sub">部署到公网前需先配置云端数据库</p>
+
+      <div class="setup-field">
+        <label>Supabase URL（必填）</label>
+        <input type="url" id="sbUrl" placeholder="https://xxx.supabase.co" value="">
+      </div>
+      <div class="setup-field">
+        <label>anon/public key（必填）</label>
+        <input type="text" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIs..." value="">
+        <div class="hint">注册 Supabase → 创建项目 → Settings → API → Project API keys → anon/public</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-primary btn-full" onclick="saveCloudConfig()">✅ 保存并开始使用</button>
+      </div>
+
+      <div class="setup-divider">或者先用本地模式体验（数据仅存在本机浏览器）</div>
+
+      <button class="btn btn-outline btn-full" onclick="skipCloudConfig()">🚀 跳过，本地体验</button>
+      <p style="font-size:11px;color:#bbb;margin-top:10px">本地模式下数据存储在浏览器缓存中，仅供测试<br>正式使用必须配置云端数据库</p>
+    </div>
+  </div>
+</div>
+
+<!-- 成功弹窗 -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal-box">
+    <div class="icon">✅</div>
+    <h3>预约申请已提交</h3>
+    <p>管理员将尽快审核并联系您确认。<br>如所选时段已有安排，会主动协调其他时间。</p>
+    <button class="btn btn-primary" onclick="closeModal('successModal')">知道了</button>
+  </div>
+</div>
+
+<!-- 二维码弹窗 -->
+<div class="modal-overlay qr-modal" id="qrModal">
+  <div class="modal-box">
+    <div class="icon">📱</div>
+    <h3>扫一扫 · 预约</h3>
+    <div class="qr-wrap"><div id="qrcode"></div></div>
+    <div class="qr-url" id="qrUrl">加载中...</div>
+    <button class="btn btn-primary btn-full" onclick="copyQrUrl()" id="copyQrBtn">📋 复制链接</button>
+    <p style="font-size:12px;color:#999;margin-top:10px">访客用微信扫码即可直接预约</p>
+    <button class="btn btn-outline btn-full" style="margin-top:6px" onclick="closeModal('qrModal')">关闭</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toastContainer"></div>
+
+<script>
+// =====================================================================
+// 🔧 云数据库配置
+// 下面两行已为你填好，部署到公网可直接使用
+// 如需更换，修改下面两行或在页面「配置」界面重新填写
+// =====================================================================
+
+var SUPABASE_URL = localStorage.getItem('supabase_url') || 'https://tsemudtnecckeadcbtga.supabase.co';
+var SUPABASE_KEY = localStorage.getItem('supabase_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzZW11ZHRuZWNja2VhZGNidGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyNjkxMzksImV4cCI6MjA5Mzg0NTEzOX0.4YgydyCKIVkH83_td6rB-ruEVy_39r0p3d0i4XCjhVM';
+
+// 是否使用云存储（无配置时自动降级为 localStorage）
+var useCloud = SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL.indexOf('supabase') > 0;
+
+// =====================================================================
+// 💾 数据存储层 — 双模式：云端(Supabase) / 本地(localStorage)
+// =====================================================================
+
+/* ---------- 云端 (Supabase REST API) ---------- */
+function sbFetch(method, table, params, body) {
+  var url = SUPABASE_URL + '/rest/v1/' + table;
+  if (params) url += '?' + params;
+  var headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+  };
+  if (method === 'POST' || method === 'PATCH') {
+    headers['Prefer'] = 'return=representation';
+  }
+  return fetch(url, {
+    method: method,
+    headers: headers,
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('请求失败: ' + (t || r.status)); });
+    if (method === 'DELETE') return Promise.resolve([]);
+    return r.json();
+  });
+}
+
+/* ---------- 本地存储 ---------- */
+var LS_KEY = 'leader_appointment_data';
+
+function lsLoad() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch(e) { return {}; }
+}
+
+function lsSave(data) {
+  localStorage.setItem(LS_KEY, JSON.stringify(data));
+}
+
+function lsGetAppointments() {
+  var d = lsLoad();
+  return (d.appointments || []).sort(function(a, b) { return b.id - a.id; });
+}
+
+function lsCreateAppointment(data) {
+  var d = lsLoad();
+  if (!d.appointments) d.appointments = [];
+  var item = { objectId: 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2,6) };
+  for (var k in data) item[k] = data[k];
+  item.submittedAt = new Date().toLocaleString('zh-CN', { hour12: false });
+  d.appointments.unshift(item);
+  lsSave(d);
+  return Promise.resolve(item);
+}
+
+function lsUpdateAppointment(id, updates) {
+  var d = lsLoad();
+  if (!d.appointments) return Promise.reject(new Error('未找到'));
+  var found = false;
+  for (var i = 0; i < d.appointments.length; i++) {
+    if (d.appointments[i].objectId === id) {
+      for (var k in updates) d.appointments[i][k] = updates[k];
+      found = true; break;
+    }
+  }
+  if (!found) return Promise.reject(new Error('未找到'));
+  lsSave(d);
+  return Promise.resolve({});
+}
+
+function lsDeleteAppointment(id) {
+  var d = lsLoad();
+  if (!d.appointments) return Promise.resolve({});
+  d.appointments = d.appointments.filter(function(a) { return a.objectId !== id; });
+  lsSave(d);
+  return Promise.resolve({});
+}
+
+function lsGetBlocked() {
+  var d = lsLoad();
+  return (d.blockedSlots || []).sort(function(a, b) { return a.date > b.date ? 1 : -1; });
+}
+
+function lsAddBlocked(date, slot, reason) {
+  var d = lsLoad();
+  if (!d.blockedSlots) d.blockedSlots = [];
+  var item = { objectId: 'blk_' + Date.now() + '_' + Math.random().toString(36).substr(2,6), date: date, slot: slot, reason: reason || '已有安排' };
+  d.blockedSlots.push(item);
+  lsSave(d);
+  return Promise.resolve(item);
+}
+
+function lsRemoveBlocked(id) {
+  var d = lsLoad();
+  if (!d.blockedSlots) return Promise.resolve({});
+  d.blockedSlots = d.blockedSlots.filter(function(b) { return b.objectId !== id; });
+  lsSave(d);
+  return Promise.resolve({});
+}
+
+function lsGetConfig() {
+  var d = lsLoad();
+  return d.config || { leaderName: '领导', adminPwd: 'admin123' };
+}
+
+function lsSaveConfig(config) {
+  var d = lsLoad();
+  d.config = config;
+  lsSave(d);
+  return Promise.resolve(config);
+}
+
+/* ---------- 自动路由 ---------- */
+
+function fetchAppointments() {
+  if (useCloud) return sbFetch('GET', 'Appointment', 'select=*&order=createdAt.desc').then(function(rows) {
+    // 归一化：Supabase 返回 id，统一添加 objectId 字段
+    return (rows || []).map(function(r) { r.objectId = r.id; return r; });
+  });
+  return Promise.resolve(lsGetAppointments());
+}
+
+function postAppointment(data) {
+  if (useCloud) return sbFetch('POST', 'Appointment', null, data).then(function(rows) {
+    // Supabase 返回数组，取第一个并归一化 objectId
+    if (rows && rows.length > 0) { rows[0].objectId = rows[0].id; return rows[0]; }
+    return data;
+  });
+  return lsCreateAppointment(data);
+}
+
+function putAppointment(id, data) {
+  if (useCloud) return sbFetch('PATCH', 'Appointment', 'id=eq.' + id, data);
+  return lsUpdateAppointment(id, data);
+}
+
+function delAppointment(id) {
+  if (useCloud) return sbFetch('DELETE', 'Appointment', 'id=eq.' + id);
+  return lsDeleteAppointment(id);
+}
+
+function fetchBlocked() {
+  if (useCloud) return sbFetch('GET', 'BlockedSlot', 'select=*&order=date').then(function(rows) {
+    return (rows || []).map(function(r) { r.objectId = r.id; return r; });
+  });
+  return Promise.resolve(lsGetBlocked());
+}
+
+function postBlocked(date, slot, reason) {
+  if (useCloud) return sbFetch('POST', 'BlockedSlot', null, { date: date, slot: slot, reason: reason || '已有安排' });
+  return lsAddBlocked(date, slot, reason);
+}
+
+function delBlocked(id) {
+  if (useCloud) return sbFetch('DELETE', 'BlockedSlot', 'id=eq.' + id);
+  return lsRemoveBlocked(id);
+}
+
+// 配置用 localStorage 存（不涉及多用户同步，无需云端）
+function fetchConfig() {
+  return Promise.resolve(lsGetConfig());
+}
+
+function saveConfigToDB(config) {
+  return lsSaveConfig(config);
+}
+
+// =====================================================================
+// 🗂️ 全局状态
+// =====================================================================
+
+var dateData = [];
+var selected = [];
+var activeDateIdx = -1;
+var blockedCache = [];
+var adminAll = [];
+var appConfig = { leaderName: '领导', adminPwd: 'admin123' };
+var isAdmin = false;
+
+// =====================================================================
+// 📅 日期面板
+// =====================================================================
+
+function initDates() {
+  var today = new Date();
+  var pills = document.getElementById('datePills');
+  pills.innerHTML = '';
+  dateData = [];
+
+  var todayStr = fmtDate(today);
+  var upcomingBlocked = blockedCache.filter(function(b) { return b.date >= todayStr; });
+  var notice = document.getElementById('guestNotice');
+  if (upcomingBlocked.length > 0) {
+    var reasons = [...new Set(upcomingBlocked.map(function(b) { return b.date + '（' + (b.reason || '已有安排') + '）'; }))];
+    notice.textContent = '⚠ 近期已有安排：' + reasons.join('、');
+  } else {
+    notice.textContent = '';
+  }
+
+  var weekNames = '一二三四五六日';
+  for (var i = 1; i <= 14; i++) {
+    var d = new Date(today);
+    d.setDate(d.getDate() + i);
+    var dow = '周' + weekNames[(d.getDay() === 0 ? 6 : d.getDay() - 1)];
+    var ds = fmtDate(d);
+    var display = (d.getMonth() + 1) + '/' + d.getDate() + ' (' + dow + ')';
+
+    var slots = [
+      { label: '09:00-10:00', value: '09:00-10:00' },
+      { label: '10:00-11:00', value: '10:00-11:00' },
+      { label: '11:00-12:00', value: '11:00-12:00' },
+      { label: '14:00-15:00', value: '14:00-15:00' },
+      { label: '15:00-16:00', value: '15:00-16:00' },
+      { label: '16:00-17:00', value: '16:00-17:00' },
+    ];
+
+    dateData.push({ dateStr: ds, display: display, slots: slots });
+
+    var pill = document.createElement('div');
+    pill.className = 'date-pill';
+    if (isDateFullyBlocked(ds)) {
+      pill.classList.add('blocked');
+      var info = getBlockedInfo(ds, '全天');
+      pill.title = info ? info.reason : '已有安排';
+    }
+    pill.textContent = display;
+    pill.dataset.idx = i - 1;
+    pill.onclick = (function(idx) { return function() { toggleDatePill(idx); }; })(i - 1);
+    pills.appendChild(pill);
+  }
+
+  renderSelectedTags();
+  if (activeDateIdx >= 0 && activeDateIdx < dateData.length) {
+    showTimeSlots(activeDateIdx);
+  }
+}
+
+function fmtDate(d) {
+  if (typeof d === 'string') return d;
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function isSlotBlocked(dateStr, slotValue) {
+  for (var i = 0; i < blockedCache.length; i++) {
+    var b = blockedCache[i];
+    if (b.date !== dateStr) continue;
+    if (b.slot === '全天') return b.reason || '已有安排';
+    if (b.slot === '上午' && slotValue < '12:00') return b.reason || '已有安排';
+    if (b.slot === '下午' && slotValue >= '12:00') return b.reason || '已有安排';
+    if (b.slot === slotValue) return b.reason || '已有安排';
+  }
+  return false;
+}
+
+function isDateFullyBlocked(dateStr) {
+  return blockedCache.some(function(b) { return b.date === dateStr && b.slot === '全天'; });
+}
+
+function getBlockedInfo(dateStr, slotValue) {
+  for (var i = 0; i < blockedCache.length; i++) {
+    var b = blockedCache[i];
+    if (b.date === dateStr && b.slot === slotValue) return b;
+    if (b.slot === '全天' && b.date === dateStr) return b;
+  }
+  return null;
+}
+
+function toggleDatePill(idx) {
+  var dd = dateData[idx];
+  if (isDateFullyBlocked(dd.dateStr)) {
+    var info = getBlockedInfo(dd.dateStr, '全天');
+    var notice = document.getElementById('blockedNotice');
+    notice.textContent = '⛔ 该日领导' + (info ? info.reason : '已有安排') + '，不可预约';
+    notice.style.display = '';
+    document.getElementById('timeSlotRow').classList.remove('show');
+    return;
+  }
+  document.getElementById('blockedNotice').style.display = 'none';
+  var pills = document.querySelectorAll('.date-pill');
+  for (var i = 0; i < pills.length; i++) { if (i !== idx) pills[i].classList.remove('active'); }
+  pills[idx].classList.add('active');
+  showTimeSlots(idx);
+}
+
+function showTimeSlots(idx) {
+  activeDateIdx = idx;
+  var dd = dateData[idx];
+  var row = document.getElementById('timeSlotRow');
+  row.classList.add('show');
+  document.getElementById('timeSlotDateLabel').textContent = dd.display;
+  var container = document.getElementById('timeSlotPills');
+  container.innerHTML = '';
+  dd.slots.forEach(function(slot, si) {
+    var pill = document.createElement('div');
+    var blockedReason = isSlotBlocked(dd.dateStr, slot.value);
+    if (blockedReason) {
+      pill.className = 'time-pill blocked';
+      pill.title = '领导' + blockedReason;
+      pill.textContent = slot.label + ' ❌';
+    } else {
+      pill.className = 'time-pill';
+      pill.textContent = slot.label;
+      var alreadySelected = selected.some(function(s) { return s.dateStr === dd.dateStr && s.timeValue === slot.value; });
+      if (alreadySelected) pill.classList.add('active');
+      pill.onclick = (function(di, si) { return function() { toggleTimeSlot(di, si); }; })(idx, si);
+    }
+    container.appendChild(pill);
+  });
+}
+
+function toggleTimeSlot(dateIdx, slotIdx) {
+  var dd = dateData[dateIdx];
+  var slot = dd.slots[slotIdx];
+  if (isSlotBlocked(dd.dateStr, slot.value)) return;
+  var existingIdx = selected.findIndex(function(s) { return s.dateStr === dd.dateStr && s.timeValue === slot.value; });
+  if (existingIdx > -1) selected.splice(existingIdx, 1);
+  else selected.push({ dateStr: dd.dateStr, display: dd.display, timeLabel: slot.label, timeValue: slot.value });
+  showTimeSlots(dateIdx);
+  renderSelectedTags();
+}
+
+function renderSelectedTags() {
+  var container = document.getElementById('selectedTags');
+  if (selected.length === 0) { container.innerHTML = '<span style="font-size:12px;color:#bbb">尚未选择</span>'; return; }
+  container.innerHTML = selected.map(function(s, i) {
+    return '<span class="selected-tag">' + s.display + ' ' + s.timeLabel + '<span class="remove" onclick="removeSlot(' + i + ')">✕</span></span>';
+  }).join('');
+}
+
+function removeSlot(idx) { selected.splice(idx, 1); renderSelectedTags(); if (activeDateIdx > -1) showTimeSlots(activeDateIdx); }
+function clearSelectedSlots() { selected = []; renderSelectedTags(); if (activeDateIdx > -1) showTimeSlots(activeDateIdx); }
+
+// =====================================================================
+// 🚀 提交预约
+// =====================================================================
+
+function submitAppointment() {
+  var company = document.getElementById('gCompany').value.trim();
+  var name = document.getElementById('gName').value.trim();
+  var phone = document.getElementById('gPhone').value.trim();
+  var purpose = document.getElementById('gPurpose').value.trim();
+
+  if (!company || !name || !phone || !purpose) { showToast('请填写公司名称、联系人、电话和拜访事由'); return; }
+  if (selected.length === 0) { showToast('请至少选择一个日期和时段'); return; }
+
+  var req = {
+    company: company, name: name,
+    title: document.getElementById('gTitle').value.trim(),
+    phone: phone, email: document.getElementById('gEmail').value.trim(),
+    purpose: purpose,
+    preferredSlots: selected.map(function(s) { return s.display + ' ' + s.timeLabel; }),
+    note: document.getElementById('gNote').value.trim(),
+    status: '待处理',
+    submittedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+  };
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '提交中...';
+
+  postAppointment(req).then(function() {
+    document.getElementById('successModal').classList.add('show');
+    selected = []; renderSelectedTags();
+    document.querySelectorAll('.date-pill').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('timeSlotRow').classList.remove('show');
+    document.getElementById('gCompany').value = '';
+    document.getElementById('gName').value = '';
+    document.getElementById('gTitle').value = '';
+    document.getElementById('gPhone').value = '';
+    document.getElementById('gEmail').value = '';
+    document.getElementById('gPurpose').value = '';
+    document.getElementById('gNote').value = '';
+  }).catch(function(e) {
+    showToast('提交失败：' + e.message + '，请稍后重试');
+  }).finally(function() {
+    btn.disabled = false; btn.textContent = '提交预约申请';
+  });
+}
+
+// =====================================================================
+// 🔐 模式切换
+// =====================================================================
+
+function toggleMode() {
+  if (isAdmin) { exitAdmin(); }
+  else { showAdminLogin(); }
+}
+
+function showAdminLogin() {
+  if (!useCloud && !lsGetConfig()) { showToast('请先完成首次配置'); return; }
+  var pwd = prompt('请输入管理密码：');
+  if (pwd === null) return;
+  if (pwd === appConfig.adminPwd || pwd === 'admin123') { enterAdmin(); }
+  else { showToast('密码错误'); }
+}
+
+function enterAdmin() {
+  isAdmin = true;
+  document.body.className = 'mode-admin';
+  document.getElementById('brandText').textContent = '🔐 管理后台';
+  document.getElementById('switchBtn').textContent = '← 返回预约';
+  loadAdminData();
+}
+
+function exitAdmin() {
+  isAdmin = false;
+  document.body.className = 'mode-guest';
+  document.getElementById('brandText').textContent = '📅 ' + appConfig.leaderName + '预约申请';
+  document.getElementById('switchBtn').textContent = '管理后台';
+}
+
+// =====================================================================
+// ⚙️ 设置
+// =====================================================================
+
+function saveSettings() {
+  var name = document.getElementById('sLeaderName').value.trim() || '领导';
+  var pwd = document.getElementById('sAdminPwd').value.trim() || 'admin123';
+  appConfig.leaderName = name;
+  appConfig.adminPwd = pwd;
+  document.getElementById('leaderNameDisplay').textContent = '预约' + name + '时间';
+  document.getElementById('brandText').textContent = '📅 ' + name + '预约申请';
+  saveConfigToDB({ leaderName: name, adminPwd: pwd }).then(function() {
+    showToast('✅ 设置已保存' + (useCloud ? '（云端同步）' : '（本地存储）'));
+  }).catch(function(e) {
+    showToast('保存失败：' + e.message);
+  });
+}
+
+// =====================================================================
+// 📋 管理后台
+// =====================================================================
+
+function loadAdminData() {
+  renderBlockedList();
+  renderAdminTable();
+}
+
+function renderAdminTable() {
+  fetchAppointments().then(function(all) {
+    adminAll = all;
+    document.getElementById('adminTotal').textContent = all.length;
+    document.getElementById('adminPending').textContent = all.filter(function(r) { return r.status === '待处理'; }).length;
+    document.getElementById('adminStats').textContent = '共 ' + all.length + ' 条 | 待处理 ' + all.filter(function(r) { return r.status === '待处理'; }).length + ' 条';
+
+    var body = document.getElementById('adminBody');
+    var empty = document.getElementById('adminEmpty');
+    if (all.length === 0) { body.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    body.innerHTML = all.map(function(r) {
+      var sc = r.status === '待处理' ? 'status-pending' : r.status === '已确认' ? 'status-confirmed' : 'status-declined';
+      var times = Array.isArray(r.preferredSlots) ? r.preferredSlots.join('<br>') : (r.preferredSlots || '—');
+      var conflictHtml = '';
+      if (r.preferredSlots) {
+        var conflicts = blockedCache.filter(function(b) {
+          return r.preferredSlots.some(function(s) { return s.indexOf(b.date) >= 0 && (b.slot === '全天' || s.indexOf(b.slot) >= 0); });
+        });
+        if (conflicts.length > 0) {
+          conflictHtml = '<br><span style="color:#e53935;font-size:11px">⚠ 与「' + conflicts.map(function(c) { return c.reason || '已有安排'; }).join('、') + '」冲突</span>';
+        }
+      }
+      return '<tr>'
+        + '<td style="white-space:nowrap;color:#888;font-size:12px">' + (r.submittedAt || '') + '</td>'
+        + '<td><strong>' + escHtml(r.company) + '</strong></td>'
+        + '<td>' + escHtml(r.name) + (r.title ? '<br><span style="font-size:11px;color:#999">' + escHtml(r.title) + '</span>' : '') + '</td>'
+        + '<td>' + escHtml(r.phone) + '</td>'
+        + '<td style="max-width:180px">' + escHtml(r.purpose) + conflictHtml + '</td>'
+        + '<td style="font-size:12px">' + times + '</td>'
+        + '<td><span class="status-badge ' + sc + '">' + r.status + '</span></td>'
+        + '<td class="actions" style="white-space:nowrap">'
+        + (r.status === '待处理'
+          ? '<button class="btn btn-success btn-xs" onclick="updateStatus(\'' + r.objectId + '\',\'已确认\')">确认</button>'
+          + '<button class="btn btn-warning btn-xs" onclick="suggestReschedule(\'' + r.objectId + '\')">改期</button>'
+          + '<button class="btn btn-danger btn-xs" onclick="updateStatus(\'' + r.objectId + '\',\'已婉拒\')">婉拒</button>'
+          : '<button class="btn btn-outline btn-xs" onclick="updateStatus(\'' + r.objectId + '\',\'待处理\')">重置</button>')
+        + '<button class="btn btn-outline btn-xs" onclick="deleteRequest(\'' + r.objectId + '\')">删除</button>'
+        + '</td></tr>';
+    }).join('');
+  }).catch(function(e) {
+    console.error('加载失败：', e);
+    document.getElementById('adminBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:20px">加载失败：' + e.message + '</td></tr>';
+  });
+}
+
+function escHtml(str) { if (!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateStatus(id, status) {
+  putAppointment(id, { status: status }).then(function() { showToast('已更新为「' + status + '」'); renderAdminTable(); })
+    .catch(function(e) { showToast('操作失败：' + e.message); });
+}
+
+function deleteRequest(id) {
+  if (!confirm('确认删除此预约记录？')) return;
+  delAppointment(id).then(function() { showToast('已删除'); renderAdminTable(); })
+    .catch(function(e) { showToast('删除失败：' + e.message); });
+}
+
+function suggestReschedule(id) {
+  var r = null;
+  for (var i = 0; i < adminAll.length; i++) { if (adminAll[i].objectId === id) { r = adminAll[i]; break; } }
+  if (!r) return;
+  var conflicts = blockedCache.filter(function(b) {
+    return r.preferredSlots && r.preferredSlots.some(function(s) { return s.indexOf(b.date) >= 0; });
+  });
+  var reasons = conflicts.map(function(c) { return c.date + '（' + (c.reason || '已有安排') + '）'; }).join('、');
+  var msg = '尊敬的' + r.company + r.name + '，您选择的' + reasons + '已有安排，请问以下时间是否方便？\n（请手动填写替代时间后回复访客）';
+  try { navigator.clipboard.writeText(msg); } catch(e) {}
+  showToast('已复制改期话术到剪贴板');
+}
+
+function exportData() {
+  if (adminAll.length === 0) { showToast('暂无数据'); return; }
+  var lines = ['=== ' + appConfig.leaderName + '预约记录 ===', '导出时间：' + new Date().toLocaleString('zh-CN', { hour12: false }), ''];
+  adminAll.forEach(function(r) {
+    var times = Array.isArray(r.preferredSlots) ? r.preferredSlots.join('、') : (r.preferredSlots || '—');
+    lines.push('【' + r.status + '】' + r.company + ' | ' + r.name + ' ' + r.phone);
+    lines.push('  事由：' + (r.purpose || ''));
+    lines.push('  首选时间：' + times);
+    lines.push('  提交时间：' + (r.submittedAt || ''));
+    if (r.note) lines.push('  备注：' + r.note);
+    lines.push('');
+  });
+  try { navigator.clipboard.writeText(lines.join('\n')); } catch(e) {}
+  showToast('已复制 ' + adminAll.length + ' 条记录到剪贴板');
+}
+
+// =====================================================================
+// ⛔ 不可约时段管理
+// =====================================================================
+
+function renderBlockedList() {
+  var list = document.getElementById('blockedList');
+  if (blockedCache.length === 0) { list.innerHTML = '<span style="font-size:12px;color:#bbb">暂未设置不可约时段</span>'; return; }
+  list.innerHTML = blockedCache.map(function(b) {
+    return '<span class="blocked-tag">' + b.date + ' ' + b.slot + ' — ' + (b.reason || '已有安排')
+      + '<span class="remove" onclick="removeBlockedSlot(\'' + b.objectId + '\')">✕</span></span>';
+  }).join('');
+}
+
+function addBlockedSlot() {
+  var date = document.getElementById('blockedDate').value;
+  var slot = document.getElementById('blockedSlot').value;
+  var reason = document.getElementById('blockedReason').value.trim() || '已有安排';
+  if (!date) { showToast('请选择日期'); return; }
+
+  for (var i = 0; i < blockedCache.length; i++) {
+    if (blockedCache[i].date === date && blockedCache[i].slot === slot) { showToast('该时段已设置'); return; }
+  }
+
+  var btn = document.getElementById('addBlockedBtn');
+  btn.disabled = true;
+
+  postBlocked(date, slot, reason).then(function() { return refreshBlocked(); })
+    .then(function() {
+      document.getElementById('blockedDate').value = '';
+      document.getElementById('blockedReason').value = '';
+      showToast('已添加不可约时段');
+    }).catch(function(e) { showToast('添加失败：' + e.message); })
+    .finally(function() { btn.disabled = false; });
+}
+
+function removeBlockedSlot(id) {
+  if (!confirm('确认移除该不可约时段？')) return;
+  delBlocked(id).then(function() { return refreshBlocked(); })
+    .then(function() { showToast('已移除'); })
+    .catch(function(e) { showToast('移除失败：' + e.message); });
+}
+
+function refreshBlocked() {
+  return fetchBlocked().then(function(data) {
+    blockedCache = data;
+    renderBlockedList();
+    initDates();
+    if (isAdmin) renderAdminTable();
+  });
+}
+
+// =====================================================================
+// 📱 二维码
+// =====================================================================
+
+function showQR() {
+  var modal = document.getElementById('qrModal');
+  modal.classList.add('show');
+  var url = window.location.href.split('#')[0];
+  document.getElementById('qrUrl').textContent = url;
+  var container = document.getElementById('qrcode');
+  container.innerHTML = '';
+  var apiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent(url);
+  var img = document.createElement('img');
+  img.src = apiUrl;
+  img.style.width = '200px'; img.style.height = '200px';
+  img.alt = '预约二维码';
+  img.onerror = function() {
+    container.innerHTML = '<div style="padding:24px;border:2px dashed #ddd;border-radius:8px;text-align:center">'
+      + '<p style="font-size:13px;color:#888;margin-bottom:8px">二维码加载失败</p>'
+      + '<p style="font-size:11px;color:var(--primary);word-break:break-all">' + url + '</p></div>';
+  };
+  container.appendChild(img);
+}
+
+function copyQrUrl() {
+  var url = document.getElementById('qrUrl').textContent;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url); }
+    else { var ta = document.createElement('textarea'); ta.value = url; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+    var btn = document.getElementById('copyQrBtn');
+    btn.textContent = '✅ 已复制！';
+    setTimeout(function() { btn.textContent = '📋 复制链接'; }, 2000);
+  } catch(e) {}
+}
+
+// =====================================================================
+// 🌐 首次配置 / 部署引导
+// =====================================================================
+
+function showSetupGuide() {
+  document.getElementById('sbUrl').value = SUPABASE_URL;
+  document.getElementById('sbKey').value = SUPABASE_KEY;
+  document.body.className = 'mode-setup';
+  document.getElementById('switchBtn').textContent = '← 返回';
+  // Override the bar switch to go back
+}
+
+function saveCloudConfig() {
+  var url = document.getElementById('sbUrl').value.trim().replace(/\/+$/, '');
+  var key = document.getElementById('sbKey').value.trim();
+  if (!url || !key) { showToast('请填写 Supabase URL 和 Key'); return; }
+  if (url.indexOf('supabase') < 0 && url.indexOf('localhost') < 0) { showToast('URL 格式不正确，应以 https://xxx.supabase.co 开头'); return; }
+  localStorage.setItem('supabase_url', url);
+  localStorage.setItem('supabase_key', key);
+  SUPABASE_URL = url;
+  SUPABASE_KEY = key;
+  useCloud = true;
+  showToast('✅ 云端配置已保存，正在初始化...');
+  return fullReload();
+}
+
+function skipCloudConfig() {
+  useCloud = false;
+  localStorage.setItem('supabase_url', '');
+  localStorage.setItem('supabase_key', '');
+  showToast('📁 已切换为本地模式（数据仅存在本机浏览器）');
+  return fullReload();
+}
+
+function fullReload() {
+  // 重新初始化全部数据
+  return fetchConfig().then(function(cfg) {
+    appConfig.leaderName = cfg.leaderName || '领导';
+    appConfig.adminPwd = cfg.adminPwd || 'admin123';
+    document.getElementById('sLeaderName').value = appConfig.leaderName;
+    document.getElementById('sAdminPwd').value = appConfig.adminPwd;
+    document.getElementById('leaderNameDisplay').textContent = '预约' + appConfig.leaderName + '时间';
+    document.getElementById('brandText').textContent = '📅 ' + appConfig.leaderName + '预约申请';
+    document.getElementById('versionTag').textContent = useCloud ? '☁️ 云同步 · 数据实时同步' : '📁 本地模式 · 数据仅存本机';
+    document.body.className = 'mode-guest';
+    return refreshBlocked();
+  }).catch(function(e) {
+    console.warn('初始化失败：', e);
+    document.body.className = 'mode-guest';
+    refreshBlocked();
+  });
+}
+
+// =====================================================================
+// 🛠️ 工具
+// =====================================================================
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function showToast(msg) {
+  var container = document.getElementById('toastContainer');
+  var toast = document.createElement('div');
+  toast.className = 'toast'; toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s';
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 2500);
+}
+
+function isWeChat() {
+  return navigator.userAgent.toLowerCase().indexOf('micromessenger') !== -1;
+}
+
+// =====================================================================
+// 🚀 启动
+// =====================================================================
+
+(function init() {
+  // 检测是否为首次使用
+  // 如果 localStorage 没值但代码里硬编码了，也算已配置
+  var hasLocalStorage = localStorage.getItem('supabase_url') !== null;
+  var hasHardcoded = SUPABASE_URL.indexOf('supabase') > 0 && SUPABASE_KEY.indexOf('eyJ') === 0;
+
+  if (!hasLocalStorage && !hasHardcoded && !localStorage.getItem(LS_KEY)) {
+    // 首次使用且没有硬编码配置：显示配置引导页
+    document.body.className = 'mode-setup';
+    document.getElementById('sbUrl').value = '';
+    document.getElementById('sbKey').value = '';
+    return;
+  }
+
+  // 把硬编码的值同步到 localStorage
+  if (!hasLocalStorage && hasHardcoded) {
+    localStorage.setItem('supabase_url', SUPABASE_URL);
+    localStorage.setItem('supabase_key', SUPABASE_KEY);
+  }
+
+  // 已有配置：正常加载
+  fullReload();
+})();
+</script>
+</body>
+</html>
