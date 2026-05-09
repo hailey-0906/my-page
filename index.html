@@ -222,6 +222,25 @@ body.mode-setup .top-bar { display: none; }
 #qrcode img, #qrcode canvas { display: block; }
 .qr-url { background: var(--gray); border-radius: 6px; padding: 8px 12px; font-size: 11px; color: var(--text2); word-break: break-all; margin-bottom: 12px; user-select: all; }
 .version-tag { font-size: 11px; color: #ccc; text-align: center; padding: 16px 20px 32px; }
+
+/* ===== 查询状态面板 ===== */
+.query-toggle { text-align: center; margin: 6px 0 12px; }
+.query-toggle a { color: var(--primary); font-size: 13px; cursor: pointer; text-decoration: underline; }
+.query-toggle a:hover { color: var(--primary-dark); }
+.query-panel { display: none; max-width: 400px; margin: 0 auto 16px; background: #fff; border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); }
+.query-panel.show { display: block; }
+.query-panel h3 { font-size: 14px; color: var(--primary); margin-bottom: 10px; }
+.query-panel .qr { display: flex; gap: 8px; }
+.query-panel .qr input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+.query-panel .qr input:focus { outline: none; border-color: var(--primary); }
+.query-result { margin-top: 10px; max-height: 360px; overflow-y: auto; }
+.query-item { padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; }
+.query-item.status-pending { background: #fff8e1; border-left: 3px solid var(--warning); }
+.query-item.status-confirmed { background: #e8f5e9; border-left: 3px solid var(--success); }
+.query-item.status-declined { background: #ffebee; border-left: 3px solid var(--danger); }
+.query-item .qi-status { font-weight: 600; }
+.query-item .qi-time { color: var(--text2); font-size: 12px; }
+.query-empty { text-align: center; padding: 16px; color: var(--text2); font-size: 13px; }
 .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.78); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 300; animation: toastIn 0.25s ease; pointer-events: none; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
@@ -253,6 +272,17 @@ body.mode-setup .top-bar { display: none; }
     <h1 id="leaderNameDisplay">预约领导时间</h1>
     <p>填写以下信息，提交预约申请，等待管理员确认</p>
     <div class="notice" id="guestNotice"></div>
+    <div class="query-toggle">
+      <a onclick="toggleQuery()">📋 查询我的预约状态</a>
+    </div>
+    <div class="query-panel" id="queryPanel">
+      <h3>📋 查询预约状态</h3>
+      <div class="qr">
+        <input type="tel" id="queryPhone" placeholder="输入你填写的手机号" maxlength="11">
+        <button class="btn btn-primary btn-sm" onclick="queryStatus()">查询</button>
+      </div>
+      <div class="query-result" id="queryResult"></div>
+    </div>
   </div>
   <div class="form-card">
     <div class="form-section">
@@ -844,6 +874,47 @@ function submitAppointment() {
     btn.disabled = false; btn.textContent = '提交预约申请';
   });
 }
+  
+// =====================================================================
+// 📋 访客查询预约状态
+// =====================================================================
+
+function toggleQuery() {
+  var panel = document.getElementById('queryPanel');
+  panel.classList.toggle('show');
+  if (panel.classList.contains('show')) {
+    document.getElementById('queryPhone').focus();
+  }
+}
+
+function queryStatus() {
+  var phone = document.getElementById('queryPhone').value.trim();
+  var resultDiv = document.getElementById('queryResult');
+  if (!phone || phone.length < 7) { resultDiv.innerHTML = '<div class="query-empty">请输入完整的手机号</div>'; return; }
+  
+  resultDiv.innerHTML = '<div class="query-empty">查询中...</div>';
+  
+  fetchAppointments().then(function(all) {
+    var items = all.filter(function(r) { return r.phone && r.phone.indexOf(phone) >= 0; });
+    if (items.length === 0) {
+      resultDiv.innerHTML = '<div class="query-empty">未找到该手机号的预约记录<br><span style="font-size:11px;color:#999">请确认填写的手机号是否正确</span></div>';
+      return;
+    }
+    resultDiv.innerHTML = items.reverse().map(function(r) {
+      var sc = r.status === '待处理' ? 'status-pending' : r.status === '已确认' ? 'status-confirmed' : 'status-declined';
+      var statusText = r.status === '已确认' ? '✅ 已确认' : r.status === '已婉拒' ? '❌ 已婉拒' : '⏳ 待处理';
+      var times = Array.isArray(r.preferredSlots) ? r.preferredSlots.join('、') : (r.preferredSlots || '—');
+      return '<div class="query-item ' + sc + '">'
+        + '<div class="qi-status">' + statusText + '</div>'
+        + '<div><strong>' + (r.company || '') + '</strong> ' + (r.name || '') + '</div>'
+        + '<div class="qi-time">提交时间：' + (r.submittedAt || '—') + '</div>'
+        + '<div class="qi-time">申请时间：' + times + '</div>'
+        + '</div>';
+    }).join('');
+  }).catch(function(e) {
+    resultDiv.innerHTML = '<div class="query-empty">查询失败，请稍后重试</div>';
+  });
+}
 
 // =====================================================================
 // 🔐 模式切换
@@ -940,6 +1011,7 @@ function renderAdminTable() {
           + '<button class="btn btn-warning btn-xs" onclick="suggestReschedule(\'' + r.objectId + '\')">改期</button>'
           + '<button class="btn btn-danger btn-xs" onclick="updateStatus(\'' + r.objectId + '\',\'已婉拒\')">婉拒</button>'
           : '<button class="btn btn-outline btn-xs" onclick="updateStatus(\'' + r.objectId + '\',\'待处理\')">重置</button>')
+        + '<button class="btn btn-outline btn-xs" onclick="copyPhone(\'' + r.objectId + '\')">📞 复制电话</button>'
         + '<button class="btn btn-outline btn-xs" onclick="deleteRequest(\'' + r.objectId + '\')">删除</button>'
         + '</td></tr>';
     }).join('');
@@ -960,6 +1032,14 @@ function deleteRequest(id) {
   if (!confirm('确认删除此预约记录？')) return;
   delAppointment(id).then(function() { showToast('已删除'); renderAdminTable(); })
     .catch(function(e) { showToast('删除失败：' + e.message); });
+}
+
+function copyPhone(id) {
+  var r = null;
+  for (var i = 0; i < adminAll.length; i++) { if (adminAll[i].objectId === id) { r = adminAll[i]; break; } }
+  if (!r) return;
+  try { navigator.clipboard.writeText(r.phone); showToast('已复制电话：' + r.phone); }
+  catch(e) { showToast('复制失败，请手动记录：' + r.phone); }
 }
 
 function suggestReschedule(id) {
